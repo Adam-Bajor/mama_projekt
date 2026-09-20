@@ -597,7 +597,9 @@
         const defaultCycleStart = new Date(2024, 6, 21);
         let cycleStart = defaultCycleStart;
         let isLoadingCycleStart = true;
-        const cycleApiUrl = window.TABLETKI_CONFIG && window.TABLETKI_CONFIG.apiUrl;
+        const cycleApiUrl = window.TABLETKI_CONFIG && window.TABLETKI_CONFIG.apiUrl
+            ? window.TABLETKI_CONFIG.apiUrl
+            : "https://ngfndqujwgwmnmnunwcv.supabase.co/functions/v1/smooth-action";
         const today = new Date();
         let visibleMonth = new Date(today.getFullYear(), today.getMonth(), 1);
         const monthNames = [
@@ -745,6 +747,31 @@
             renderCalendar();
         }
 
+        async function readApiResponse(response, fallbackMessage) {
+            const responseText = await response.text();
+            let data = {};
+
+            try {
+                data = responseText ? JSON.parse(responseText) : {};
+            } catch (error) {
+                data = {};
+            }
+
+            if (!response.ok) {
+                throw new Error(data.error || data.message || `${fallbackMessage} (HTTP ${response.status}).`);
+            }
+
+            return data;
+        }
+
+        function getNetworkErrorMessage(error) {
+            if (error instanceof TypeError && error.message === "Failed to fetch") {
+                return "Nie udało się połączyć z serwerem. Sprawdź połączenie oraz konfigurację CORS funkcji Supabase.";
+            }
+
+            return error.message || "Wystąpił nieoczekiwany błąd połączenia.";
+        }
+
         async function loadCycleStart() {
             if (!cycleApiUrl) {
                 isLoadingCycleStart = false;
@@ -752,17 +779,13 @@
             }
 
             try {
-                const response = await fetch(cycleApiUrl, { headers: { Accept: "application/json" } });
-                if (!response.ok) {
-                    throw new Error("Nie udało się pobrać daty.");
-                }
-
-                const data = await response.json();
+                const response = await fetch(cycleApiUrl, { method: "GET" });
+                const data = await readApiResponse(response, "Nie udało się pobrać daty");
                 if (parseInputDate(data.cycleStart)) {
                     updateCycleStart(data.cycleStart);
                 }
             } catch (error) {
-                console.error(error);
+                console.error("Błąd pobierania daty:", error);
             } finally {
                 isLoadingCycleStart = false;
                 document.getElementById("cycleStartInput").disabled = false;
@@ -774,15 +797,27 @@
                 throw new Error("Brak konfiguracji połączenia z serwerem.");
             }
 
-            const response = await fetch(cycleApiUrl, {
-                method: "POST",
-                headers: { "Content-Type": "application/json", Accept: "application/json" },
-                body: JSON.stringify({ password, date: value })
-            });
+            let response;
 
-            const data = await response.json().catch(() => ({}));
+            try {
+                response = await fetch(cycleApiUrl, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ password, date: value })
+                });
+            } catch (error) {
+                throw new Error(getNetworkErrorMessage(error));
+            }
+
+            let data;
+            try {
+                data = await readApiResponse(response, "Nie udało się zapisać daty");
+            } catch (error) {
+                throw new Error(getNetworkErrorMessage(error));
+            }
+
             if (response.status !== 200 || data.success !== true) {
-                throw new Error(data.error || data.message || "Nie udało się zapisać daty.");
+                throw new Error(data.error || data.message || "Serwer nie potwierdził zapisania daty.");
             }
         }
 
@@ -833,7 +868,7 @@
                 dateDialogMessage.textContent = "Data została pomyślnie zaktualizowana.";
             } catch (error) {
                 dateDialogMessage.className = "date-dialog-message";
-                dateDialogMessage.textContent = error.message;
+                dateDialogMessage.textContent = getNetworkErrorMessage(error);
             } finally {
                 submitButton.disabled = false;
                 submitButton.textContent = "Zapisz";
