@@ -4,24 +4,27 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tabletki</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            color-scheme: light;
-            --bg: #f5f7f8;
-            --surface: #ffffff;
-            --surface-soft: #eef2f4;
-            --ink: #101418;
-            --muted: #66717a;
-            --line: #d7dee3;
-            --yes: #087443;
-            --yes-soft: #e4f7ee;
-            --no: #b42318;
-            --no-soft: #fde8e5;
-            --today: #1d4ed8;
-            --shadow: 0 18px 44px rgba(28, 39, 49, 0.1);
+            color-scheme: dark;
+            --bg: #0b1117;
+            --surface: #131d26;
+            --surface-soft: #1b2934;
+            --ink: #eef6f5;
+            --muted: #91a5ad;
+            --line: #2b3b47;
+            --yes: #51d49b;
+            --yes-soft: #173b35;
+            --no: #ff7d79;
+            --no-soft: #432a31;
+            --today: #72a7ff;
+            --shadow: 0 24px 70px rgba(0, 0, 0, 0.34);
             --calendar-rows: 6;
-            --accent: #0f766e;
-            --accent-soft: #dff7f4;
+            --accent: #62d7c4;
+            --accent-soft: #173f42;
         }
 
         * {
@@ -37,9 +40,12 @@
 
         body {
             margin: 0;
-            font-family: Arial, Helvetica, sans-serif;
+            font-family: "DM Sans", sans-serif;
             color: var(--ink);
-            background: var(--bg);
+            background:
+                radial-gradient(circle at 15% 10%, rgba(98, 215, 196, 0.11), transparent 32%),
+                radial-gradient(circle at 85% 90%, rgba(114, 167, 255, 0.12), transparent 30%),
+                var(--bg);
         }
 
         button {
@@ -49,7 +55,7 @@
         .app {
             width: 100%;
             height: 100vh;
-            padding: 0;
+            padding: clamp(14px, 3vw, 32px);
             cursor: pointer;
         }
 
@@ -71,15 +77,16 @@
 
         .home-card {
             position: relative;
-            width: 100%;
-            min-height: 100%;
+            width: min(1080px, 100%);
+            min-height: calc(100vh - clamp(28px, 6vw, 64px));
+            margin: auto;
             padding: clamp(34px, 6vw, 84px);
             background:
-                linear-gradient(135deg, rgba(228, 247, 238, 0.86), rgba(255, 255, 255, 0.68) 42%, rgba(253, 232, 229, 0.76)),
+                linear-gradient(135deg, rgba(28, 58, 65, 0.92), rgba(19, 29, 38, 0.94) 52%, rgba(43, 38, 55, 0.92)),
                 var(--surface);
-            border: 0;
-            border-radius: 0;
-            box-shadow: none;
+            border: 1px solid rgba(145, 165, 173, 0.18);
+            border-radius: 24px;
+            box-shadow: var(--shadow);
             overflow: hidden;
             display: grid;
             place-items: center;
@@ -293,6 +300,9 @@
             gap: clamp(8px, 1.5vh, 14px);
             overflow: hidden;
             padding: clamp(12px, 2.2vw, 28px);
+            max-width: 1440px;
+            width: 100%;
+            margin: auto;
         }
 
         .calendar-head {
@@ -304,7 +314,7 @@
             padding: 10px 12px;
             border: 1px solid var(--line);
             border-radius: 8px;
-            background: var(--surface);
+            background: rgba(19, 29, 38, 0.94);
             box-shadow: 0 10px 28px rgba(28, 39, 49, 0.08);
         }
 
@@ -399,7 +409,7 @@
             min-height: 0;
             padding: clamp(6px, 1vw, 12px);
             border: 1px solid var(--line);
-            background: var(--surface);
+            background: rgba(19, 29, 38, 0.88);
             display: grid;
             grid-template-rows: auto 1fr auto;
             gap: clamp(3px, 0.7vh, 8px);
@@ -597,9 +607,7 @@
         const defaultCycleStart = new Date(2024, 6, 21);
         let cycleStart = defaultCycleStart;
         let isLoadingCycleStart = true;
-        const cycleApiUrl = window.TABLETKI_CONFIG && window.TABLETKI_CONFIG.apiUrl
-            ? window.TABLETKI_CONFIG.apiUrl
-            : "https://ngfndqujwgwmnmnunwcv.supabase.co/functions/v1/smooth-action";
+        const cycleApiUrl = window.TABLETKI_CONFIG && window.TABLETKI_CONFIG.apiUrl;
         const today = new Date();
         let visibleMonth = new Date(today.getFullYear(), today.getMonth(), 1);
         const monthNames = [
@@ -781,8 +789,8 @@
             try {
                 const response = await fetch(cycleApiUrl, { method: "GET" });
                 const data = await readApiResponse(response, "Nie udało się pobrać daty");
-                if (parseInputDate(data.cycleStart)) {
-                    updateCycleStart(data.cycleStart);
+                if (parseInputDate(data.saved_date)) {
+                    updateCycleStart(data.saved_date);
                 }
             } catch (error) {
                 console.error("Błąd pobierania daty:", error);
@@ -819,6 +827,12 @@
             if (response.status !== 200 || data.success !== true) {
                 throw new Error(data.error || data.message || "Serwer nie potwierdził zapisania daty.");
             }
+
+            if (!parseInputDate(data.saved_date)) {
+                throw new Error("Serwer nie zwrócił zapisanej daty.");
+            }
+
+            return data.saved_date;
         }
 
         function showNextMonth() {
@@ -862,8 +876,8 @@
             dateDialogMessage.textContent = "";
 
             try {
-                await saveCycleStart(password, newCycleStart);
-                updateCycleStart(newCycleStart);
+                const savedDate = await saveCycleStart(password, newCycleStart);
+                updateCycleStart(savedDate);
                 dateDialogMessage.className = "date-dialog-message is-success";
                 dateDialogMessage.textContent = "Data została pomyślnie zaktualizowana.";
             } catch (error) {
