@@ -3,266 +3,859 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tabletka</title>
+    <title>Tabletki</title>
     <style>
-        html{
-            background-color: rgba(0, 0, 0, 1);
-            background-image: linear-gradient(90deg, rgba(0, 0, 0, 1) 0%, rgba(6, 39, 2, 0.8) 5%, rgba(2, 47, 48, 0.8) 95%, rgba(0, 0, 0, 1) 100%);
+        :root {
+            color-scheme: light;
+            --bg: #f5f7f8;
+            --surface: #ffffff;
+            --surface-soft: #eef2f4;
+            --ink: #101418;
+            --muted: #66717a;
+            --line: #d7dee3;
+            --yes: #087443;
+            --yes-soft: #e4f7ee;
+            --no: #b42318;
+            --no-soft: #fde8e5;
+            --today: #1d4ed8;
+            --shadow: 0 18px 44px rgba(28, 39, 49, 0.1);
+            --calendar-rows: 6;
+            --accent: #0f766e;
+            --accent-soft: #dff7f4;
         }
-        body{
-            font-family: Garamond;
-            color: black;
-            padding: 0;
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
             margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            color: var(--ink);
+            background: var(--bg);
         }
-        .block{
-            height: 207px;
-            width: 207px;
-            margin: 0.2rem;
-            border: solid 2px black;
-            border-radius: 10% 10% 10% 10%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 200%
+
+        button {
+            font: inherit;
         }
-        .kalendarz{
-            display: flex;
-            flex-wrap: wrap;
+
+        .app {
+            width: 100%;
+            height: 100vh;
+            padding: 0;
+            cursor: pointer;
         }
-        
-        .pierwszy{
-            justify-content: center;
-            display: flex;
-            flex-wrap: wrap;
-            font-size: 1880%;
-            color: white;
-        }
-        .drugi{
+
+        .screen {
+            height: 100%;
             display: none;
         }
-        .kalendarz p{
-            width: 100%;
-            color: white;
-            font-size: 350%;
+
+        .screen.is-active {
+            display: grid;
+        }
+
+        .home {
+            align-items: stretch;
+            justify-items: stretch;
             text-align: center;
-            margin: 5px;
+            position: relative;
+        }
+
+        .home-card {
+            position: relative;
+            width: 100%;
+            min-height: 100%;
+            padding: clamp(34px, 6vw, 84px);
+            background:
+                linear-gradient(135deg, rgba(228, 247, 238, 0.86), rgba(255, 255, 255, 0.68) 42%, rgba(253, 232, 229, 0.76)),
+                var(--surface);
+            border: 0;
+            border-radius: 0;
+            box-shadow: none;
+            overflow: hidden;
+            display: grid;
+            place-items: center;
+        }
+
+        .home-card::before {
+            content: "";
+            position: absolute;
+            inset: 0 0 auto;
+            height: 8px;
+            background: linear-gradient(90deg, var(--yes), var(--today), var(--no));
+        }
+
+        .home-content {
+            width: min(980px, 100%);
+            position: relative;
+            z-index: 1;
+        }
+
+        .cycle-settings {
+            position: absolute;
+            top: clamp(12px, 2vw, 22px);
+            right: clamp(12px, 2vw, 22px);
+            z-index: 2;
+            display: grid;
+            width: min(160px, calc(100vw - 32px));
+            padding: 0;
+            text-align: left;
+            background: transparent;
+            border: 0;
+            box-shadow: none;
+        }
+
+        .cycle-settings label {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            overflow: hidden;
+            clip: rect(0 0 0 0);
+            white-space: nowrap;
+        }
+
+        .cycle-settings input {
+            width: 100%;
+            min-height: 38px;
+            padding: 7px 9px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            color: var(--ink);
+            background: rgba(255, 255, 255, 0.92);
+            font: inherit;
+            font-size: 14px;
+            font-weight: 700;
+            box-shadow: 0 12px 28px rgba(28, 39, 49, 0.12);
+        }
+
+        .change-date-button {
+            min-height: 34px;
+            margin-top: 6px;
+            padding: 6px 9px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            color: var(--muted);
+            background: rgba(255, 255, 255, 0.92);
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 700;
+            box-shadow: 0 8px 20px rgba(28, 39, 49, 0.08);
+        }
+
+        .change-date-button:hover {
+            color: var(--ink);
+        }
+
+        .date-dialog {
+            width: min(360px, calc(100vw - 32px));
+            padding: 22px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            color: var(--ink);
+            background: var(--surface);
+            box-shadow: var(--shadow);
+        }
+
+        .date-dialog::backdrop {
+            background: rgba(16, 20, 24, 0.35);
+        }
+
+        .date-dialog h2 {
+            margin: 0 0 16px;
+            font-size: 20px;
+        }
+
+        .date-dialog label {
+            display: grid;
+            gap: 6px;
+            margin-top: 12px;
+            color: var(--muted);
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .date-dialog input {
+            min-height: 38px;
+            padding: 7px 9px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            color: var(--ink);
+            background: var(--surface);
+            font: inherit;
+        }
+
+        .date-dialog-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            margin-top: 18px;
+        }
+
+        .date-dialog-actions button {
+            min-height: 36px;
+            padding: 7px 12px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 700;
+        }
+
+        .date-dialog-actions button[type="submit"] {
+            border-color: var(--today);
+            color: #ffffff;
+            background: var(--today);
+        }
+
+        .date-dialog-actions button:disabled {
+            cursor: wait;
+            opacity: 0.7;
+        }
+
+        .date-dialog-message {
+            min-height: 18px;
+            margin: 12px 0 0;
+            color: var(--no);
+            font-size: 13px;
+        }
+
+        .date-dialog-message.is-success {
+            color: var(--yes);
+        }
+
+        .status-strip {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin: clamp(20px, 4vw, 34px) 0 0;
+        }
+
+        .status-chip {
+            padding: 8px 11px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: var(--surface-soft);
+            color: var(--muted);
+            font-size: clamp(13px, 1.8vw, 17px);
+            font-weight: 700;
+        }
+
+        .eyebrow {
+            margin: 0;
+            font-size: clamp(18px, 2.4vw, 30px);
+            font-weight: 700;
+            color: var(--muted);
+        }
+
+        .answer {
+            margin: clamp(22px, 4vw, 36px) 0 0;
+            font-size: clamp(90px, 24vw, 230px);
+            line-height: 0.9;
+            letter-spacing: 0;
+            text-transform: uppercase;
+        }
+
+        .answer.yes {
+            color: var(--yes);
+        }
+
+        .answer.no {
+            color: var(--no);
+        }
+
+        .cycle-day {
+            margin: clamp(18px, 3vw, 30px) auto 0;
+            width: fit-content;
+            padding: 10px 16px;
+            border-radius: 8px;
+            background: var(--accent-soft);
+            color: var(--accent);
+            font-size: clamp(22px, 4.2vw, 52px);
+            font-weight: 700;
+        }
+
+        .hint {
+            margin: clamp(22px, 4vw, 36px) 0 0;
+            color: var(--muted);
+            font-size: clamp(16px, 2vw, 20px);
+        }
+
+        .calendar-screen {
+            grid-template-rows: auto minmax(0, 1fr);
+            gap: clamp(8px, 1.5vh, 14px);
+            overflow: hidden;
+            padding: clamp(12px, 2.2vw, 28px);
+        }
+
+        .calendar-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            min-height: 0;
+            padding: 10px 12px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: var(--surface);
+            box-shadow: 0 10px 28px rgba(28, 39, 49, 0.08);
+        }
+
+        .calendar-title {
+            margin: 0;
+            font-size: clamp(26px, 4.3vw, 56px);
+            line-height: 1;
+        }
+
+        .calendar-subtitle {
+            margin: 8px 0 0;
+            color: var(--muted);
+            font-size: clamp(14px, 1.8vw, 18px);
+        }
+
+        .calendar-legend {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 9px;
+        }
+
+        .legend-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--muted);
+            font-size: clamp(12px, 1.5vw, 15px);
+            font-weight: 700;
+        }
+
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 999px;
+            background: var(--yes);
+        }
+
+        .legend-dot.is-break {
+            background: var(--no);
+        }
+
+        .calendar-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        .current-month-button,
+        .next-month-button {
+            min-height: 40px;
+            padding: 8px 14px;
+            border: 1px solid var(--today);
+            border-radius: 8px;
+            background: var(--today);
+            color: #ffffff;
+            cursor: pointer;
+            font-weight: 700;
+        }
+
+        .current-month-button {
+            background: var(--surface);
+            color: var(--today);
+        }
+
+        .calendar {
+            display: grid;
+            grid-template-columns: repeat(7, minmax(0, 1fr));
+            grid-template-rows: auto repeat(var(--calendar-rows), minmax(0, 1fr));
+            gap: clamp(4px, 0.8vw, 10px);
+            min-height: 0;
+        }
+
+        .weekday,
+        .day {
+            border-radius: 8px;
+        }
+
+        .weekday {
+            padding: clamp(5px, 1vh, 9px) 4px;
+            text-align: center;
+            color: var(--muted);
+            background: transparent;
+            border: 1px solid transparent;
+            font-size: clamp(11px, 1.4vw, 16px);
+            font-weight: 700;
+        }
+
+        .day {
+            min-height: 0;
+            padding: clamp(6px, 1vw, 12px);
+            border: 1px solid var(--line);
+            background: var(--surface);
+            display: grid;
+            grid-template-rows: auto 1fr auto;
+            gap: clamp(3px, 0.7vh, 8px);
+            overflow: hidden;
+            box-shadow: 0 6px 16px rgba(28, 39, 49, 0.05);
+        }
+
+        .day.is-empty {
+            background: transparent;
+            border-color: transparent;
+        }
+
+        .day.is-pill {
+            background: var(--yes-soft);
+            border-color: #a8dfc4;
+        }
+
+        .day.is-break {
+            background: var(--no-soft);
+            border-color: #f5b8b1;
+        }
+
+        .day.is-today {
+            border: 3px solid var(--today);
+            padding: clamp(4px, 0.85vw, 10px);
+        }
+
+        .date {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .number {
+            font-size: clamp(20px, 3.2vw, 42px);
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .month {
+            color: var(--muted);
+            font-size: clamp(11px, 1.3vw, 15px);
+        }
+
+        .status {
+            align-self: center;
+            width: fit-content;
+            padding: clamp(4px, 0.8vw, 7px) clamp(7px, 1vw, 10px);
+            border-radius: 8px;
+            font-size: clamp(14px, 1.7vw, 21px);
+            font-weight: 700;
+        }
+
+        .is-pill .status {
+            color: var(--yes);
+            background: rgba(22, 120, 75, 0.12);
+        }
+
+        .is-break .status {
+            color: var(--no);
+            background: rgba(165, 39, 39, 0.12);
+        }
+
+        .cycle {
+            color: var(--muted);
+            font-size: clamp(11px, 1.3vw, 15px);
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        @media (max-width: 720px) {
+            .app {
+                padding: 0;
+            }
+
+            .calendar-head {
+                align-items: center;
+            }
+
+            .calendar-subtitle {
+                display: none;
+            }
+
+            .cycle-settings {
+                position: static;
+                width: min(190px, 100%);
+                margin-bottom: 14px;
+                justify-self: end;
+            }
+
+            .current-month-button,
+            .next-month-button {
+                min-height: 34px;
+                padding: 6px 9px;
+                font-size: 13px;
+            }
+
+            .calendar {
+                gap: 3px;
+            }
+
+            .month,
+            .cycle {
+                display: none;
+            }
+
+            .number {
+                font-size: clamp(18px, 6vw, 30px);
+            }
+
+            .status {
+                padding: 3px 5px;
+                font-size: clamp(12px, 3.6vw, 16px);
+            }
+        }
+
+        @media (max-height: 620px) {
+            .calendar-subtitle,
+            .calendar-legend,
+            .month,
+            .cycle {
+                display: none;
+            }
+
+            .calendar-title {
+                font-size: clamp(22px, 5vh, 34px);
+            }
+
         }
     </style>
 </head>
 <body>
-    <div onclick="Zmiana()">
+    <main class="app" id="app" aria-live="polite">
+        <section class="screen home is-active" id="home">
+            <div class="home-card">
+                <div class="cycle-settings" id="cycleSettings">
+                    <label for="cycleStartInput">Start cyklu</label>
+                    <input type="date" id="cycleStartInput" aria-label="Data startu cyklu" readonly>
+                    <button class="change-date-button" type="button" id="changeDateButton">Zmień datę</button>
+                </div>
+                <div class="home-content">
+                    <p class="eyebrow">Tabletka dzisiaj</p>
+                    <h1 class="answer" id="todayAnswer">...</h1>
+                    <p class="cycle-day" id="todayCycleDay"></p>
+                    <div class="status-strip" aria-hidden="true">
+                        <span class="status-chip">21 dni tabletki</span>
+                        <span class="status-chip">7 dni przerwy</span>
+                    </div>
+                    <p class="hint">Kliknij, żeby zobaczyć cały miesiąc.</p>
+                </div>
+            </div>
+        </section>
 
-        <div class="pierwszy" id="pierwszy"> 
+        <section class="screen calendar-screen" id="calendarScreen">
+            <header class="calendar-head">
+                <div>
+                    <h2 class="calendar-title" id="calendarTitle"></h2>
+                    <p class="calendar-subtitle" id="calendarSubtitle"></p>
+                    <div class="calendar-legend" aria-hidden="true">
+                        <span class="legend-item"><span class="legend-dot"></span>Tabletka</span>
+                        <span class="legend-item"><span class="legend-dot is-break"></span>Przerwa</span>
+                    </div>
+                </div>
+                <div class="calendar-actions">
+                    <button class="current-month-button" type="button" id="currentMonthButton">Obecny miesiąc</button>
+                    <button class="next-month-button" type="button" id="nextMonthButton">Następny miesiąc</button>
+                </div>
+            </header>
+            <div class="calendar" id="calendar"></div>
+        </section>
+    </main>
 
-        </div>
+    <dialog class="date-dialog" id="dateDialog">
+        <form id="dateForm">
+            <h2>Zmień datę</h2>
+            <label>
+                Hasło
+                <input type="password" id="adminPassword" autocomplete="current-password" required>
+            </label>
+            <label>
+                Nowa data
+                <input type="date" id="newCycleStart" required>
+            </label>
+            <p class="date-dialog-message" id="dateDialogMessage" role="alert"></p>
+            <div class="date-dialog-actions">
+                <button type="button" id="cancelDateButton">Anuluj</button>
+                <button type="submit">Zapisz</button>
+            </div>
+        </form>
+    </dialog>
 
-        <div class="drugi" id="drugi">
-            <div class="kalendarz"> </div>
-        </div>
-
-    </div>
-        
-<!-- Pirewsza strona -->
+    <script src="config.js"></script>
     <script>
-        // Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec
-            teraz = new Date();
-            dzien = new Date("Jul 21 2024 0:0:00");
-            sekund = Math.abs(teraz-dzien)/1000;
-            minut = parseInt(sekund/60);
-            godzin = parseInt(minut/60);
-            dni = parseInt(godzin/24);
-            lat = parseInt(dni/365);
-            console.log(dni)
-            let wynik = (dni) % 28;
-            console.log(sekund,minut,godzin,dni,lat)
-            if (wynik <= 20) {
-                wynik=wynik+1;
-                const p = document.createElement("div");
-                p.innerText = `TAK
-                Dzień ${wynik}`; 
-                document.querySelector(".pierwszy").appendChild(p); 
-            }else{
-                wynik=wynik+1;
-                const p = document.createElement("div");
-                p.innerText = `NIE
-                Dzień ${wynik}`; 
-                document.querySelector(".pierwszy").appendChild(p); 
+        const defaultCycleStart = new Date(2024, 6, 21);
+        let cycleStart = defaultCycleStart;
+        let isLoadingCycleStart = true;
+        const cycleApiUrl = window.TABLETKI_CONFIG && window.TABLETKI_CONFIG.apiUrl;
+        const today = new Date();
+        let visibleMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+        const monthNames = [
+            "stycznia",
+            "lutego",
+            "marca",
+            "kwietnia",
+            "maja",
+            "czerwca",
+            "lipca",
+            "sierpnia",
+            "września",
+            "października",
+            "listopada",
+            "grudnia"
+        ];
+        const monthTitleNames = [
+            "Styczeń",
+            "Luty",
+            "Marzec",
+            "Kwiecień",
+            "Maj",
+            "Czerwiec",
+            "Lipiec",
+            "Sierpień",
+            "Wrzesień",
+            "Październik",
+            "Listopad",
+            "Grudzień"
+        ];
+        const weekdayNames = ["Pn", "Wt", "Śr", "Cz", "Pt", "Sb", "Nd"];
+
+        function formatInputDate(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, "0");
+            const day = String(date.getDate()).padStart(2, "0");
+            return `${year}-${month}-${day}`;
+        }
+
+        function parseInputDate(value) {
+            if (!value) {
+                return null;
             }
-            
-            
-    </script>
-<!-- Druga  strona -->
-    <script>
-        let data = new Date();
-        let rok = data.getFullYear();
-        let miesiac = data.getMonth();
-        let A_dzien = data.getDate();
-        let przestepny = rok%4
-        let klasa = 1
-        let dzienFor = 1
-        let LicznikDzien = 1
-        let wynik2 = 0
 
-        console.log(dzienFor,A_dzien,)
+            const [year, month, day] = value.split("-").map(Number);
+            const date = new Date(year, month - 1, day);
+            return Number.isNaN(date.getTime()) ? null : date;
+        }
 
-        switch(miesiac) {
-            case 0:
-                dzien = 31
-                nazwa = "Styczeń"
-            break;
-            case 1:
-                nazwa = "Luty"
-                if(przestepny == 0){
-                    dzien = 29
-                }else(
-                    dzien = 28
-                )
-            break;
-            case 2:
-                nazwa = "Marzec"
-                dzien = 31
-            break;
-            case 3:
-                nazwa = "Kwiecień"
-                dzien = 30
-            break;
-            case 4:
-                nazwa = "Maj"
-                dzien = 31
-            break;
-            case 5:
-                nazwa = "Czerwiec"
-                dzien = 30
-            break;
-            case 6:
-                nazwa = "Lipiec"
-                dzien = 31
-            break;
-            case 7:
-                nazwa = "Sierpień"
-                dzien = 31
-            break;
-            case 8:
-                nazwa = "Wrzesień"
-                dzien = 30
-            break;
-            case 9:
-                nazwa = "Październik"
-                dzien = 31
-            break;
-            case 10:
-                nazwa = "Listopad"
-                dzien = 30
-            break;
-            case 11:
-                nazwa = "Grudzień"
-                dzien = 31
-            break;
-}  
+        function startOfDay(date) {
+            return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+        }
 
-        const p = document.createElement("p");
-        p.innerText = `Kalendarz Miesiąc ${nazwa}`; 
-        document.querySelector(".kalendarz").appendChild(p);
+        function daysBetween(fromDate, toDate) {
+            const dayLength = 24 * 60 * 60 * 1000;
+            return Math.floor((startOfDay(toDate) - startOfDay(fromDate)) / dayLength);
+        }
 
-        
-        dni = dni-A_dzien
-        wynik = dni%27
+        function cycleDayFor(date) {
+            const difference = daysBetween(cycleStart, date);
+            return ((difference % 28) + 28) % 28 + 1;
+        }
 
-        for (let i = 0; i < dzien; i++) {
-            if(dzienFor==A_dzien){
-                
-                if(wynik < 20){
-                    wynik2 = "Tak"
-                    wynik = wynik+1 
-                }else{
-                    wynik2 = "NIE"
-                    wynik = wynik+1
-                }
+        function takesPill(date) {
+            return cycleDayFor(date) <= 21;
+        }
 
-                const el = document.createElement("div");
+        function showScreen(screenName) {
+            document.getElementById("home").classList.toggle("is-active", screenName === "home");
+            document.getElementById("calendarScreen").classList.toggle("is-active", screenName === "calendar");
+        }
 
-                klasa = "dzien"+LicznikDzien
-                LicznikDzien++
+        function renderHome() {
+            const answer = document.getElementById("todayAnswer");
+            const cycleDay = cycleDayFor(today);
+            const isPillDay = takesPill(today);
 
-                el.classList.add("block");
-                el.classList.add(klasa);
-                el.style.background = `white`;
-                
-                el.innerText = 
-                `Aktualny 
-                Dzień ${wynik+1}
-                ${dzienFor++}.${miesiac+1}.${rok}
-                Tabletka-${wynik2}`; 
+            answer.textContent = isPillDay ? "TAK" : "NIE";
+            answer.classList.toggle("yes", isPillDay);
+            answer.classList.toggle("no", !isPillDay);
+            document.getElementById("todayCycleDay").textContent = `Dzień cyklu: ${cycleDay}`;
+        }
 
-                document.querySelector(".kalendarz").appendChild(el);
+        function createElement(tagName, className, text) {
+            const element = document.createElement(tagName);
+            element.className = className;
+            if (text) {
+                element.textContent = text;
+            }
+            return element;
+        }
 
-                wynik = wynik%27
-            }else{
-                if(wynik < 20){
-                    const el = document.createElement("div");
+        function renderCalendar() {
+            const calendar = document.getElementById("calendar");
+            const year = visibleMonth.getFullYear();
+            const month = visibleMonth.getMonth();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const firstDay = new Date(year, month, 1);
+            const mondayOffset = (firstDay.getDay() + 6) % 7;
+            const calendarRows = Math.ceil((mondayOffset + daysInMonth) / 7);
 
-                    klasa = "dzien"+LicznikDzien
-                    LicznikDzien++ 
-                    wynik2 = "TAK"
-                    wynik = wynik+1
+            document.getElementById("calendarTitle").textContent = `${monthTitleNames[month]} ${year}`;
+            document.getElementById("calendarSubtitle").textContent = "Tak = dzień tabletki. Nie = przerwa.";
+            calendar.style.setProperty("--calendar-rows", calendarRows);
+            calendar.replaceChildren();
 
-                    el.classList.add("block");
-                    el.classList.add(klasa);
-                    el.style.background = `rgba(0, 76, 255, 0.4)`;
-                    el.style.color = `white`
+            weekdayNames.forEach((name) => {
+                calendar.appendChild(createElement("div", "weekday", name));
+            });
 
-                    el.innerText = 
-                    `${dzienFor++}.${miesiac+1}.${rok}
-                    Tabletka-${wynik2}`;
+            for (let i = 0; i < mondayOffset; i++) {
+                calendar.appendChild(createElement("div", "day is-empty"));
+            }
 
-                    document.querySelector(".kalendarz").appendChild(el);
-                    wynik = wynik%27
-                }else{
-                    const el = document.createElement("div");
+            for (let day = 1; day <= daysInMonth; day++) {
+                const date = new Date(year, month, day);
+                const cycleDay = cycleDayFor(date);
+                const isPillDay = takesPill(date);
+                const isToday = day === today.getDate() && month === today.getMonth() && year === today.getFullYear();
+                const tile = createElement("article", `day ${isPillDay ? "is-pill" : "is-break"} ${isToday ? "is-today" : ""}`);
 
-                    klasa = "dzien"+LicznikDzien
-                    LicznikDzien++ 
-                    wynik2 = "NIE"
-                    wynik = wynik+1
+                const dateLine = createElement("div", "date");
+                dateLine.appendChild(createElement("span", "number", String(day)));
+                dateLine.appendChild(createElement("span", "month", monthNames[month]));
 
-                    el.classList.add("block");
-                    el.classList.add(klasa);
-                    el.style.background = `rgba(255, 0, 0, 0.4)`;
-                    el.style.color = `white`
+                tile.appendChild(dateLine);
+                tile.appendChild(createElement("div", "status", isPillDay ? "Tak" : "Nie"));
+                tile.appendChild(createElement("div", "cycle", `Dzień ${cycleDay}`));
+                tile.setAttribute("aria-label", `${day} ${monthNames[month]}: tabletka ${isPillDay ? "tak" : "nie"}, dzień cyklu ${cycleDay}`);
 
-                    el.innerText = 
-                    `${dzienFor++}.${miesiac+1}.${rok}
-                    Tabletka-${wynik2}`;
-
-                    document.querySelector(".kalendarz").appendChild(el);
-                    wynik = wynik%27
-                }
+                calendar.appendChild(tile);
             }
         }
 
+        function updateCycleStart(value) {
+            const nextCycleStart = parseInputDate(value);
 
-    </script>
-    <!-- ZMINA -->
-    <script>
-        let WynikJeden = 1
-        let WynikDwa = 0
-        function Zmiana(){
-            WynikJeden = (WynikJeden + 1)%2;
-            WynikDwa = (WynikDwa + 1)%2;
-            if(WynikJeden == 1){
-                WynikDisplay1 = "flex"
-            }else{
-                WynikDisplay1 = "none"
+            if (!nextCycleStart) {
+                return;
             }
-            if(WynikDwa == 1){
-                WynikDisplay2 = "flex"
-            }else{
-                WynikDisplay2 = "none"
-            }
-            document.getElementById("pierwszy").style.display = WynikDisplay1;
-            document.getElementById("drugi").style.display = WynikDisplay2;
+
+            cycleStart = nextCycleStart;
+            document.getElementById("cycleStartInput").value = value;
+            renderHome();
+            renderCalendar();
         }
+
+        async function loadCycleStart() {
+            if (!cycleApiUrl) {
+                isLoadingCycleStart = false;
+                return;
+            }
+
+            try {
+                const response = await fetch(cycleApiUrl, { headers: { Accept: "application/json" } });
+                if (!response.ok) {
+                    throw new Error("Nie udało się pobrać daty.");
+                }
+
+                const data = await response.json();
+                if (parseInputDate(data.cycleStart)) {
+                    updateCycleStart(data.cycleStart);
+                }
+            } catch (error) {
+                console.error(error);
+            } finally {
+                isLoadingCycleStart = false;
+                document.getElementById("cycleStartInput").disabled = false;
+            }
+        }
+
+        async function saveCycleStart(password, value) {
+            if (!cycleApiUrl) {
+                throw new Error("Brak konfiguracji połączenia z serwerem.");
+            }
+
+            const response = await fetch(cycleApiUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", Accept: "application/json" },
+                body: JSON.stringify({ password, date: value })
+            });
+
+            const data = await response.json().catch(() => ({}));
+            if (response.status !== 200 || data.success !== true) {
+                throw new Error(data.error || data.message || "Nie udało się zapisać daty.");
+            }
+        }
+
+        function showNextMonth() {
+            visibleMonth = new Date(visibleMonth.getFullYear(), visibleMonth.getMonth() + 1, 1);
+            renderCalendar();
+        }
+
+        function showCurrentMonth() {
+            visibleMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+            renderCalendar();
+        }
+
+        document.getElementById("cycleStartInput").value = formatInputDate(cycleStart);
+        document.getElementById("cycleStartInput").disabled = true;
+        document.getElementById("cycleStartInput").addEventListener("click", (event) => {
+            event.stopPropagation();
+        });
+        document.getElementById("cycleSettings").addEventListener("click", (event) => {
+            event.stopPropagation();
+        });
+        const dateDialog = document.getElementById("dateDialog");
+        const dateForm = document.getElementById("dateForm");
+        const dateDialogMessage = document.getElementById("dateDialogMessage");
+        document.getElementById("changeDateButton").addEventListener("click", () => {
+            dateForm.reset();
+            dateDialogMessage.className = "date-dialog-message";
+            dateDialogMessage.textContent = "";
+            document.getElementById("newCycleStart").value = formatInputDate(cycleStart);
+            dateDialog.showModal();
+        });
+        document.getElementById("cancelDateButton").addEventListener("click", () => {
+            dateDialog.close();
+        });
+        dateForm.addEventListener("submit", async (event) => {
+            event.preventDefault();
+            const password = document.getElementById("adminPassword").value;
+            const newCycleStart = document.getElementById("newCycleStart").value;
+            const submitButton = dateForm.querySelector("button[type=submit]");
+            submitButton.disabled = true;
+            submitButton.textContent = "Ładowanie...";
+            dateDialogMessage.textContent = "";
+
+            try {
+                await saveCycleStart(password, newCycleStart);
+                updateCycleStart(newCycleStart);
+                dateDialogMessage.className = "date-dialog-message is-success";
+                dateDialogMessage.textContent = "Data została pomyślnie zaktualizowana.";
+            } catch (error) {
+                dateDialogMessage.className = "date-dialog-message";
+                dateDialogMessage.textContent = error.message;
+            } finally {
+                submitButton.disabled = false;
+                submitButton.textContent = "Zapisz";
+            }
+        });
+        document.getElementById("nextMonthButton").addEventListener("click", (event) => {
+            event.stopPropagation();
+            showNextMonth();
+        });
+        document.getElementById("currentMonthButton").addEventListener("click", (event) => {
+            event.stopPropagation();
+            showCurrentMonth();
+        });
+
+        document.getElementById("app").addEventListener("click", () => {
+            const isHomeActive = document.getElementById("home").classList.contains("is-active");
+            showScreen(isHomeActive ? "calendar" : "home");
+        });
+
+        renderHome();
+        renderCalendar();
+        loadCycleStart();
     </script>
 </body>
 </html>
